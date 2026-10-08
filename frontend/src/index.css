@@ -1,0 +1,51 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Public+Sans:wght@400;500;600&display=swap");
+
+/* TRACE design tokens: shared by every page */
+:root {
+  --map: #13222c; --map-line: #2b4150; --map-ink: #e8efe9; --map-dim: #8fa5b2;
+  --paper: #e8ebee; --card: #f6f7f8; --ink: #16232c; --dim: #566873; --rule: #c3cbd1;
+  --pin: #e5522b; --teal: #1b7f86; --err: #b3261e; --ok: #1b7f5a;
+  --thumb: color-mix(in srgb, var(--dim) 45%, transparent);
+  --display: "Archivo", system-ui, sans-serif;
+  --body: "Public Sans", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0c161d; --card: #16242d; --ink: #e6edf0; --dim: #93a6b1;
+    --rule: #2b3d49; --teal: #4cc0c8; --err: #ff8a80; --ok: #5fd3a2;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0c161d; --card: #16242d; --ink: #e6edf0; --dim: #93a6b1;
+  --rule: #2b3d49; --teal: #4cc0c8; --err: #ff8a80; --ok: #5fd3a2;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.5 var(--body); min-height: 100vh; }
+a { color: var(--teal); font-weight: 600; }
+:focus-visible { outline: 3px solid var(--pin); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+
+/* Leaflet map theming */
+.leaflet-container { background: #05090c; font-family: var(--body); }
+.leaflet-tile-pane { filter: brightness(.7) contrast(1.15) saturate(.6); } /* near-black map on every page */
+.leaflet-container a { color: var(--teal); }
+.leaflet-control-attribution { background: rgba(19, 34, 44, .8) !important; color: var(--map-dim) !important; }
+.leaflet-bar a { background: var(--map); color: var(--map-ink); border-color: var(--map-line); }
+.leaflet-bar a:hover { background: #1e3340; color: #fff; }
+
+/* Dark dropdowns: the closed select and the opened option list are both dark */
+.in.dark { position: relative; background: var(--map); border-color: var(--map-line); color-scheme: dark; }
+.in.dark select.dsel { appearance: none; -webkit-appearance: none; background: transparent; color: var(--map-ink); padding-right: 36px; cursor: pointer; }
+.in.dark select.dsel option { background: #0c161d; color: #e8efe9; }
+.in.dark::after { content: ""; position: absolute; right: 14px; top: 50%; width: 7px; height: 7px; border-right: 2px solid var(--map-dim); border-bottom: 2px solid var(--map-dim); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+
+/* Themed scrollbars: slim, rounded, they pick up the light or dark palette */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--thumb); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--teal); background-clip: padding-box; border: 2px solid transparent; }
+::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--thumb) transparent; }
+}
