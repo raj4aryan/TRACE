@@ -1,22 +1,27 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { canAccess, homeFor } from "../utils/roles";
 import "./AppHeader.css";
 
-// Top bar for every signed-in page. Admin links get added with the admin services.
-// Links are visible to everyone for now; the server enforces roles and the pages show a clear message on 403.
+// Each person only sees the links their role can open. (Hiding is for tidiness; the server still enforces roles.)
+const LINKS = [
+  { to: "/report", label: "Report", area: "report" },
+  { to: "/view-incidents", label: "Incidents", area: "incidents" },
+  { to: "/authority", label: "Review queue", area: "review" },
+  { to: "/admin", label: "Admin", area: "admin" },
+];
+
 export default function AppHeader() {
   const { user, signOut } = useAuth();
+  const links = LINKS.filter((l) => canAccess(user?.role, l.area));
   return (
     <header className="appbar">
       <div className="appbar-left">
-        <div className="appbar-brand">TRACE<i>.</i></div>
+        <Link to={homeFor(user?.role)} className="appbar-brand" style={{ textDecoration: 'none', color: 'inherit' }}>TRACE<i>.</i></Link>
+
+
         <nav>
-          {/* Add the new View incidents tab here */}
-          <NavLink to="/view-incidents">View incidents</NavLink>
-          
-          <NavLink to="/report">Report</NavLink>
-          <NavLink to="/authority">Review queue</NavLink>
-          <NavLink to="/admin">Admin</NavLink>
+          {links.map((l) => <NavLink key={l.to} to={l.to}>{l.label}</NavLink>)}
         </nav>
       </div>
       <div className="appbar-user">

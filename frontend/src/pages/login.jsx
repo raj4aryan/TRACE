@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
 import { loginUser } from "../services/auth.service";
 import { useAuth } from "../context/AuthContext";
+import { homeFor, pathAllowed, isKnownRole } from "../utils/roles";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -28,8 +29,13 @@ export default function Login() {
     setBusy(true);
     try {
       const data = await loginUser({ email: values.email.trim().toLowerCase(), password: values.password });
+      if (!isKnownRole(data.user?.role)) {
+        setBanner(`Login worked, but the server sent role "${data.user?.role ?? "(none)"}". Return \`role\` from /loginuser and check the names in utils/roles.js.`);
+        return;
+      }
       signIn(data.user);
-      navigate(location.state?.from || "/report", { replace: true });
+      const from = location.state?.from;
+      navigate(from && pathAllowed(data.user.role, from) ? from : homeFor(data.user.role), { replace: true });
     } catch (err) {
       if (err.status === 401) setBanner("Email or password is incorrect. Check both and try again.");
       else if (err.status === 400) setBanner("Enter both your email and password.");

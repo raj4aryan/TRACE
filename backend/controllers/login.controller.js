@@ -60,7 +60,8 @@ const loginController = async(req, res) => {
             message: "Login Successfull",
             user: {
                 user_name: fetchedUser.user_name,
-                alias_name: fetchedUser.alias_name
+                alias_name: fetchedUser.alias_name,
+                role: fetchedUser.role
             }
         })
 

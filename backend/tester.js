@@ -16,6 +16,13 @@ console.log(hashed)
 
 
 
+/*
+citizen login 
+
+"email": "ditpi@gmail.com"
+"password": "responsible@Citizen1",
+
+*/
 
 /*
 report crime
