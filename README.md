@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚨 TRACE
+#  TRACE
 
 ### Technology for Reporting, Analysis & Crime Evaluation
 
