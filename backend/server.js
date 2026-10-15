@@ -45,6 +45,7 @@ app.use("/reportcrime", verifyJwt, crimeReportRoute)
 
 // authority routes
 app.use('/getreports', verifyJwt, verifyRole(authorityOneRoles, "Pending Reports"), modifyCrimeReportsRoute)
+app.use('/reportdetails', verifyJwt, verifyRole(authorityOneRoles, "Pending Reports"), modifyCrimeReportsRoute)
 app.use('/updatereport', verifyJwt, verifyRole(authorityOneRoles, "Update Report Status"), modifyCrimeReportsRoute)
 
 app.use('/deletereport', verifyJwt, verifyRole(authorityTwoRoles, "Delete Reports"), modifyCrimeReportsRoute)

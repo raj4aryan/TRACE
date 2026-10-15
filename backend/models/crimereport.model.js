@@ -90,6 +90,11 @@ const crimeReportSchema = new Schema(
     default: "Pending"
   },
   
+  // --- Review trail (set when an authority verifies or rejects) ---
+  reviewed_by_alias: { type: String },
+  reviewed_at: { type: Date },
+  review_note: { type: String, trim: true, maxlength: 300 },
+
   // --- ANONYMITY FIELD ---
   reported_by_alias: {
     type: String,

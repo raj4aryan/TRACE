@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import AuthShell from "../components/AuthShell.jsx";
+import AuthShell from "../components/AuthShell";
 import { registerUser } from "../services/auth.service";
 
 const rules = {
@@ -81,7 +81,7 @@ export default function Register() {
   return (
     <AuthShell
       headline="See something. Say it without your name."
-      text="Your reports are filed under an alias, so police get the location and the facts, not your identity."
+      text="Your reports carry an alias, and other citizens never see your name. Authorities can see your name, phone and email when they review a report, and every look is logged."
     >
       {alias ? (
         <>
@@ -112,7 +112,7 @@ export default function Register() {
               { input: { type: showPw ? "text" : "password", autoComplete: "new-password" } },
               <button type="button" onClick={() => setShowPw((s) => !s)}>{showPw ? "Hide" : "Show"}</button>
             )}
-            <div className="private">Your Aadhaar number is hashed before it’s stored. It’s only used to stop duplicate accounts.</div>
+            <div className="private">We keep only a one-way fingerprint of your Aadhaar number, so each person gets one account. The number itself is never stored or shown to anyone.</div>
             <button className="go" type="submit" disabled={busy}>{busy ? "Creating account…" : "Create account"}</button>
           </form>
           <p className="alt">Already registered? <Link to="/login">Log in</Link></p>

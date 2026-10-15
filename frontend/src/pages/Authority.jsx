@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
-import AppHeader from "../components/Appheader";
-import { getPendingReports, verifyReport } from "../services/authority.service";
+import AppHeader from "../components/AppHeader";
+import ReviewPanel from "../components/ReviewPanel";
+import { getPendingReports } from "../services/authority.service";
 import { getCoords, getTime, timeAgo, formatAddress } from "../utils/report";
 import { TILE_URL, TILE_ATTR, DEFAULT_CENTER, DEFAULT_ZOOM, pinIcon, dotIcon } from "../utils/map";
 import "./Authority.css";
@@ -28,8 +29,7 @@ export default function Authority() {
   const [notice, setNotice] = useState("");
   const [filter, setFilter] = useState("All");
   const [selectedId, setSelectedId] = useState(null);
-  const [confirmId, setConfirmId] = useState(null);
-  const [busyId, setBusyId] = useState(null);
+  const [reviewId, setReviewId] = useState(null); // the report open in the review panel
   const [updatedAt, setUpdatedAt] = useState(null);
 
   const load = useCallback(async () => {
@@ -69,26 +69,23 @@ export default function Authority() {
 
   const remove = (id) => setReports((rs) => rs.filter((r) => r.incident_id !== id));
 
-  const verify = async (r) => {
-    const id = r.incident_id;
-    if (confirmId !== id) { // verifying can't be undone, so ask once
-      setConfirmId(id);
-      setTimeout(() => setConfirmId((c) => (c === id ? null : c)), 4000);
-      return;
-    }
-    setBusyId(id); setNotice("");
-    try {
-      await verifyReport(id);
-      remove(id);
-      setNotice(`${id} verified. It now counts toward hotspots and risk scores.`);
-    } catch (err) {
-      if (err.status === 404) { remove(id); setNotice("That report no longer exists. It was removed from your queue."); }
-      else if (err.status === 403) setNotice("Your role can’t verify reports.");
-      else if (err.status !== 401) setNotice("Couldn’t verify that report. Try again.");
-    } finally {
-      setBusyId(null); setConfirmId(null);
-    }
+  const openReview = (r) => { select(r); setReviewId(r.incident_id); };
+  const closeReview = useCallback(() => setReviewId(null), []);
+  useEffect(() => { // Esc goes back to the queue
+    const onKey = (e) => { if (e.key === "Escape") closeReview(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [closeReview]);
+
+  // decision is "Verified", "Rejected", or null when the report turned out to be gone or already handled.
+  const decided = (id, decision, message) => {
+    remove(id); setReviewId(null); setSelectedId(null);
+    if (message) setNotice(message);
+    else if (decision === "Verified") setNotice(`${id} approved. It now counts toward hotspots and risk scores.`);
+    else setNotice(`${id} rejected. It stays on record but won’t count toward analytics.`);
   };
+
+  const reviewing = reviewId ? reports.find((r) => r.incident_id === reviewId) : null;
 
   const mapPanel = (
     <MapContainer ref={mapRef} className="au-gmap" center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM}>
@@ -116,6 +113,9 @@ export default function Authority() {
       <AppHeader />
       <div className="au-body">
         <section className="au-list">
+          {reviewing ? (
+            <ReviewPanel report={reviewing} onClose={closeReview} onDecided={decided} />
+          ) : (<>
           <div className="au-head">
             <div>
               <div className="au-count">{loading && !reports.length ? "…" : sorted.length}</div>
@@ -145,9 +145,8 @@ export default function Authority() {
           <ul>
             {shown.map((r) => {
               const id = r.incident_id;
-              const asking = confirmId === id;
               return (
-                <li key={id} className={`au-card${id === selectedId ? " sel" : ""}`} onClick={() => select(r)}>
+                <li key={id} className={`au-card${id === selectedId ? " sel" : ""}`} onClick={() => openReview(r)}>
                   <div className="au-top">
                     <span className="au-cat">{r.crime_category}</span>
                     <span className="au-time">{timeAgo(getTime(r))}</span>
@@ -158,18 +157,13 @@ export default function Authority() {
                   </div>
                   <div className="au-foot">
                     <code>{id}</code>
-                    <button
-                      className={asking ? "ask" : ""}
-                      disabled={busyId === id}
-                      onClick={(e) => { e.stopPropagation(); verify(r); }}
-                    >
-                      {busyId === id ? "Verifying…" : asking ? "Tap again to confirm" : "Verify"}
-                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); openReview(r); }}>Review</button>
                   </div>
                 </li>
               );
             })}
           </ul>
+          </>)}
         </section>
         <section className="au-map">{mapPanel}</section>
       </div>

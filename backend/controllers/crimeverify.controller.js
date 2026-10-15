@@ -1,27 +1,28 @@
 import CrimeReportModel from "../models/crimereport.model.js";
-import {adminLogger, authorityLogger} from "../utils/logger.js";
+import UserModel from "../models/users.model.js"; // adjust the import name if your users model exports differently
+import { adminLogger, authorityLogger } from "../utils/logger.js";
 
 // Helper function to route logs
 const getRoleLogger = (role) => {
-    if (role === "admin") return adminLogger;
+    if (role === "admin" || role === "authorityTwo") return adminLogger;
     else return authorityLogger;
 };
+
+const DECISIONS = ["Verified", "Rejected"];
+
+// Contact details an authority needs, and nothing more. The Aadhaar value (a one-way hash) and the password are
+// never sent. We only read whether an Aadhaar is registered, so the panel can show the account as Aadhaar-backed.
+const REPORTER_FIELDS = "user_name alias_name email phone_number aadhaar_id";
 
 const crimeReportGetController = async (req, res) => {
     const roleLogger = getRoleLogger(req?.user?.role);
     try {
-        //1. Check for user info -- NO NEED, ALREADY DONE IN AUTHORIZATION
-        // if(!req?.user?.role){
-        //     return res.status(400).json({error: "Forbidden: Access Denied"})
-        // }
-
-        //2. Fetch the data
+        //1. Fetch the data, newest first
         const fetchedData = await CrimeReportModel.find({
             verification_status: "Pending"
-        })
+        }).sort({ createdAt: -1 }).lean();
 
-        //3. Log the access info and return
-        // The middleware already logged the access, but you can log the result count here
+        //2. Log the access info and return
         roleLogger.info(`User: ${req.user.alias_name} successfully fetched ${fetchedData.length} pending reports`);
         return res.status(200).json({
             pendingReports: fetchedData
@@ -33,42 +34,88 @@ const crimeReportGetController = async (req, res) => {
     }
 }
 
+// GET /reportdetails/:incident_id -> the reporter behind a report, so an authority can contact them.
+const crimeReportDetailsController = async (req, res) => {
+    const roleLogger = getRoleLogger(req?.user?.role);
+    try {
+        const { incident_id } = req.params;
+        if (!incident_id) return res.status(400).json({ error: "Missing required parameter: incident_id" });
+
+        const report = await CrimeReportModel.findOne({ incident_id }).select("reported_by_alias").lean();
+        if (!report) return res.status(404).json({ error: "Report not found" });
+
+        // Official FIR and news-scrape reports may have no registered account behind them.
+        const user = await UserModel.findOne({ alias_name: report.reported_by_alias }).select(REPORTER_FIELDS).lean();
+
+        roleLogger.info(`User: ${req.user.alias_name} viewed reporter details for ${incident_id}`);
+        res.set("Cache-Control", "no-store");
+        return res.status(200).json({
+            reporter: user ? {
+                alias_name: user.alias_name,
+                user_name: user.user_name,
+                email: user.email,
+                phone_number: user.phone_number,
+                aadhaar_registered: Boolean(user.aadhaar_id)
+            } : null
+        });
+    } catch (error) {
+        roleLogger.error(`Failed to fetch report details\nError: ${error.message}\nStack: ${error.stack}`);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+// PATCH /updatereport/:incident_id  { decision: "Verified" | "Rejected", note? }
+// With no body it still verifies, so older clients keep working.
 const crimeReportUpdateController = async (req, res) => {
     const roleLogger = getRoleLogger(req?.user?.role);
-    
-    try {
-        // 1. Extract from URL params
-        const { incident_id } = req.params;
 
+    try {
+        const { incident_id } = req.params;
         if (!incident_id) {
             return res.status(400).json({ error: "Missing required parameter: incident_id" });
         }
 
-        // 2. Use findOneAndUpdate and the updated returnDocument syntax
+        const decision = req.body?.decision ?? "Verified";
+        if (!DECISIONS.includes(decision)) {
+            return res.status(400).json({ error: `decision must be one of: ${DECISIONS.join(", ")}` });
+        }
+        const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
+        if (note.length > 300) return res.status(400).json({ error: "note must be 300 characters or fewer" });
+
+        // Only a Pending report can be decided, so two authorities can't overwrite each other.
         const updatedData = await CrimeReportModel.findOneAndUpdate(
-            { incident_id: incident_id },
-            { $set: { verification_status: "Verified" } },
+            { incident_id, verification_status: "Pending" },
+            { $set: {
+                verification_status: decision,
+                reviewed_by_alias: req.user.alias_name,
+                reviewed_at: new Date(),
+                review_note: note || undefined
+            } },
             { returnDocument: "after" }
         );
 
-        // 3. Handle non-existent reports
         if (!updatedData) {
-            return res.status(404).json({ error: "Report not found" });
+            const existing = await CrimeReportModel.findOne({ incident_id }).select("verification_status").lean();
+            if (!existing) return res.status(404).json({ error: "Report not found" });
+            return res.status(409).json({ error: `Report was already ${existing.verification_status}` });
         }
 
-        // 4. Corrected logging message (no .length on a single object)
-        roleLogger.info(`User: ${req.user.alias_name} successfully verified report: ${updatedData.incident_id}`);
-        
+        roleLogger.info(`User: ${req.user.alias_name} set report ${updatedData.incident_id} to ${decision}`);
+
         return res.status(200).json({
-            success: "Report verified successfully",
+            success: `Report ${decision.toLowerCase()} successfully`,
             incident_id: updatedData.incident_id,
             verification_status: updatedData.verification_status
         });
-        
+
     } catch (error) {
-        roleLogger.error(`Failed to verify report\nError: ${error.message}\nStack: ${error.stack}`);
-        return res.status(500).json({ error: "Internal Server Error" });        
+        roleLogger.error(`Failed to update report\nError: ${error.message}\nStack: ${error.stack}`);
+        return res.status(500).json({ error: "Internal Server Error" });
     }
 };
 
-export {crimeReportGetController, crimeReportUpdateController}
+export {
+    crimeReportGetController,
+    crimeReportUpdateController,
+    crimeReportDetailsController
+}
