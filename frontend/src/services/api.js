@@ -13,10 +13,28 @@ export async function request(path, { method = "GET", body } = {}) {
     const data = await res.json().catch(() => ({}));
     // Throw an error if the status code isn't in the 200 range
     if (!res.ok) {
-    const err = new Error(data.message || "Request failed");
+
+    // Handle expired/invalid sessions on protected requests.
+    // Do not trigger this for incorrect login credentials.
+    if (
+        res.status === 401 &&
+        !["/loginuser", "/registeruser", "/logoutuser"].includes(path)
+    ) {
+
+        window.dispatchEvent(
+            new Event("trace:unauthorized")
+        );
+
+    }
+
+    const err = new Error(
+        data.error || data.message || "Request failed"
+    );
+
     err.status = res.status;
     err.data = data;
+
     throw err;
-  }
+}
   return data;
 }

@@ -22,3 +22,8 @@ export const registerUser = (payload) =>
 // Server sets the trace_token cookie; the body only carries { message, user: { user_name, alias_name } }.
 export const loginUser = (payload) =>
   request("/loginuser", { method: "POST", body: payload });
+
+export const logoutUser = () =>
+    request("/logoutuser", {
+        method: "POST"
+});

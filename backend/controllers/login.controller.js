@@ -49,7 +49,8 @@ const loginController = async(req, res) => {
             httpOnly: true,  // PREVENTS XSS: JavaScript cannot read this cookie
             secure: process.env.NODE_ENV === "production", // True in production (requires HTTPS)
             sameSite: "strict", // PREVENTS CSRF: Cookie is only sent for same-site requests
-            maxAge: 2 * 60 * 60 * 1000 // 2 hours in milliseconds
+            maxAge: 2 * 60 * 60 * 1000, // 2 hours in milliseconds
+            path: "/"
         });
 
         // console.log(jwt_token)    ----DELETE

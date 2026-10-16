@@ -7,10 +7,12 @@ import connectDB from './config/db.config.js'
 import registeruserRoute from './routes/api/registeruser.route.js'
 import crimeReportRoute from './routes/api/crimereport.route.js'
 import userloginRoute from './routes/api/loginuser.route.js'
+import userlogoutRoute from './routes/api/logoutuser.route.js'
 import logger from './utils/logger.js'
 import { authorityOneRoles, authorityTwoRoles } from "./config/authority.config.js"
 import { verifyJwt, verifyRole } from "./middlewares/auth.middleware.js"
 import modifyCrimeReportsRoute from './routes/api/crimeverify.route.js'
+import deleteIncidentReportRoute from './routes/api/deleteincident.route.js'
 import updateUserRoleRoute from './routes/api/authorizeroles.route.js'
 import { allowedOrigins } from './config/allowedorigins.config.js'
 
@@ -38,6 +40,7 @@ app.use(cookieParser())
 // public routes
 app.use("/registeruser", registeruserRoute)
 app.use("/loginuser", userloginRoute)
+app.use("/logoutuser", userlogoutRoute)
 app.use("/nearbyincidents", crimeReportRoute)
 
 // private routes
@@ -48,7 +51,7 @@ app.use('/getreports', verifyJwt, verifyRole(authorityOneRoles, "Pending Reports
 app.use('/reportdetails', verifyJwt, verifyRole(authorityOneRoles, "Pending Reports"), modifyCrimeReportsRoute)
 app.use('/updatereport', verifyJwt, verifyRole(authorityOneRoles, "Update Report Status"), modifyCrimeReportsRoute)
 
-app.use('/deletereport', verifyJwt, verifyRole(authorityTwoRoles, "Delete Reports"), modifyCrimeReportsRoute)
+app.use('/deletereport', verifyJwt, verifyRole(authorityTwoRoles, "Delete Reports"), deleteIncidentReportRoute)
 app.use('/authorizerole', verifyJwt, verifyRole(authorityTwoRoles, "Update Roles"), updateUserRoleRoute)
 
 

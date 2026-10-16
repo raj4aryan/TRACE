@@ -17,7 +17,7 @@ const verifyJwt = async (req, res, next) => {
     try {
         //1. check for request
         if(!req?.cookies?.trace_token){
-            return res.status(400).json({error: "Empty Request"})
+            return res.status(401).json({error: "Authentication required"})
         }
         
         //2. extract the token and check its existence

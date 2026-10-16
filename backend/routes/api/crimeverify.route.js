@@ -1,4 +1,3 @@
-import crimeReportDeleteController from "../../controllers/admin_crimedelete.controller.js";
 import {crimeReportGetController, crimeReportDetailsController, crimeReportUpdateController } from "../../controllers/crimeverify.controller.js";
 import express from "express"
 
@@ -16,8 +15,6 @@ router.get("/:incident_id", crimeReportDetailsController);
 // router.post("/:incident_id", crimeReportRevealAadhaarController);
 
 // Delete a specific report via URL parameter
-router.delete('/:incident_id', crimeReportDeleteController);
 router.patch('/:incident_id', crimeReportUpdateController);
-
 
 export default router
