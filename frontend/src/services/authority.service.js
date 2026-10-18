@@ -7,7 +7,7 @@ export const getPendingReports = () => request("/api/incidents/pending");
 export const verifyReport = (incidentId) =>
   request(`/api/incidents/${encodeURIComponent(incidentId)}/verification`, { method: "PATCH" });
 
-// returns { reporter: { alias_name, user_name, email, phone_number, aadhaar_registered } | null }
+// returns { reporter: { alias_name, user_name, email, phone_number } | null }
 export const getReportDetails = (incidentId) =>
   request(`/api/incidents/${encodeURIComponent(incidentId)}/reporter`);
 

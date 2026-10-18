@@ -2,9 +2,6 @@ import CrimeReport from "../models/crimereport.model.js";
 import { systemLogger } from "../utils/logger.js";
 import crypto from "crypto";
 
-// Single source of truth: the allowed sources come from the model's enum.
-const SOURCES = CrimeReport.schema.path("source").enumValues;
-
 const LIMITS = { category: 60, descriptionMin: 10, description: 2000, locationType: 50, field: 120, ipcEach: 20, ipcCount: 10 };
 const ADDRESS_KEYS = ["street_name", "landmark", "locality", "city", "state"];
 
@@ -14,6 +11,9 @@ const isBlank = (v) => v === undefined || v === null || (typeof v === "string" &
 const parseCoordinate = (value, min, max) => {
     if (typeof value !== "number" && typeof value !== "string") return null;
     if (isBlank(value)) return null;
+    if (typeof value === "string" && !/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/.test(value.trim())) {
+        return null; // Number("0x48") or parseFloat("73abc") must not be accepted as coordinates.
+    }
     const n = Number(value);
     return Number.isFinite(n) && n >= min && n <= max ? n : null;
 };
@@ -77,7 +77,7 @@ const crimeReportPostController = async (req, res) => {
         }
 
         // 2. Basic body validation
-        if (!req?.body || typeof req.body !== "object" || Object.keys(req.body).length === 0) {
+        if (!req?.body || typeof req.body !== "object" || Array.isArray(req.body) || Object.keys(req.body).length === 0) {
             return res.status(400).json({ error: "Invalid Request: Empty body" });
         }
 
@@ -85,14 +85,15 @@ const crimeReportPostController = async (req, res) => {
         const { source, crime_category, description, location_type, address, ipc_section, incident_time, longitude, latitude } = req.body;
 
         // 4. Validate required fields
-        if (isBlank(source) || isBlank(crime_category) || isBlank(description) || isBlank(longitude) || isBlank(latitude)) {
-            return res.status(400).json({ error: "Missing required fields (source, category, description, coordinates)" });
+        if (isBlank(crime_category) || isBlank(description) || isBlank(longitude) || isBlank(latitude)) {
+            return res.status(400).json({ error: "Missing required fields (category, description, coordinates)" });
         }
 
         // 5. Validate each input
-        // TODO: if only authorities should file Official_FIR / News_Scrape, restrict this endpoint to "citizen" (or check req.user.role).
-        if (!SOURCES.includes(source)) {
-            return res.status(400).json({ error: `Invalid source. Allowed: ${SOURCES.join(", ")}` });
+        // Citizen-submitted reports cannot claim to originate from an official FIR or news feed.
+        // Old TRACE forms send source: "citizen"; new forms may omit it entirely.
+        if (source !== undefined && source !== "citizen") {
+            return res.status(400).json({ error: "source must be citizen for this endpoint" });
         }
         if (typeof crime_category !== "string" || crime_category.trim().length > LIMITS.category) {
             return res.status(400).json({ error: `crime_category must be text up to ${LIMITS.category} characters` });
@@ -130,7 +131,7 @@ const crimeReportPostController = async (req, res) => {
             try {
                 savedReport = await new CrimeReport({
                     incident_id: makeIncidentId(),
-                    source,
+                    source: "citizen",
                     crime_category: crime_category.trim(),
                     ipc_section: ipc,
                     description: description.trim(),
@@ -174,24 +175,29 @@ const crimeReportPostController = async (req, res) => {
 
 const getNearbyReportsController = async (req, res) => {
     try {
-        if(!req?.query){
-            return res.status(400).json({error:"Invalid Request"})
-        }
-        // 1. Extract bounding box corners from the URL query parameters
-        const { swLng, swLat, neLng, neLat } = req.query;
-
-        // 2. Validate that all coordinates are provided
-        if (!swLng || !swLat || !neLng || !neLat) {
+        // Query-string values are untrusted, even on a public GET endpoint.
+        const { swLng, swLat, neLng, neLat } = req.query ?? {};
+        if ([swLng, swLat, neLng, neLat].some(isBlank)) {
             return res.status(400).json({ error: "Missing bounding box coordinates in query" });
         }
 
-        // 3. Convert strings to floats
-        const sw = [parseFloat(swLng), parseFloat(swLat)];
-        const ne = [parseFloat(neLng), parseFloat(neLat)];
+        const west  = parseCoordinate(swLng, -180, 180);
+        const south = parseCoordinate(swLat, -90, 90);
+        const east  = parseCoordinate(neLng, -180, 180);
+        const north = parseCoordinate(neLat, -90, 90);
 
-        if (sw.some(isNaN) || ne.some(isNaN)) {
-            return res.status(400).json({ error: "Coordinates must be valid numbers" });
+        if ([west, south, east, north].some((v) => v === null)) {
+            return res.status(400).json({ error: "Bounding box coordinates must be valid longitude/latitude numbers" });
         }
+
+        // This endpoint uses a simple non-wrapping MongoDB $box.
+        // A box crossing the antimeridian would need separate handling.
+        if (west >= east || south >= north) {
+            return res.status(400).json({ error: "Bounding box corners are out of order" });
+        }
+
+        const sw = [west, south];
+        const ne = [east, north];
 
         // 4. Fetch the data using MongoDB Geospatial bounds
         const fetchedData = await CrimeReport.find({

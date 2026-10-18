@@ -114,10 +114,6 @@ export default function ReviewPanel({ report, onClose, onDecided }) {
               <Row label="Email">
                 {reporter.email ? <><a className="rv-link" href={`mailto:${reporter.email}`}>{reporter.email}</a> <CopyButton text={reporter.email} label="email" /></> : "Not on file"}
               </Row>
-              <Row label="Account">
-                {reporter.aadhaar_registered ? "Registered with Aadhaar" : "Not registered with Aadhaar"}
-                <span className="rv-dim rv-block">The Aadhaar number itself is never shown.</span>
-              </Row>
             </dl>
 
           </>
