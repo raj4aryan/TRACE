@@ -24,7 +24,7 @@
 .mr-card.sel { border-color: var(--pin); border-left-color: var(--pin); }
 .mr-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .mr-cat { font: 800 16px/1.2 var(--display); font-stretch: 108%; overflow-wrap: anywhere; }
-.mr-desc { color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.mr-desc { color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .mr-meta { color: var(--dim); font-size: 13px; }
 .mr-id { font-size: 11.5px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
