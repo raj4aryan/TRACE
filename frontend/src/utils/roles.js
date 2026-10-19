@@ -11,6 +11,7 @@ export const ROLES = Object.values(ROLE);
 // Who may open each area. Edit this one table to change visibility everywhere (routes, nav links, redirects).
 export const ACCESS = {
   report: [ROLE.CITIZEN],
+  myreports: [ROLE.CITIZEN],
   review: [ROLE.AUTHORITY, ROLE.ADMIN],
   admin: [ROLE.ADMIN],
   incidents: ROLES, // View incidents: any signed-in role. Narrow this list if it should be restricted.
@@ -23,7 +24,7 @@ const HOME = {
   [ROLE.ADMIN]: "/authority",
 };
 
-const AREA_BY_PATH = { "/report": "report", "/authority": "review", "/admin": "admin", "/view-incidents": "incidents" };
+const AREA_BY_PATH = { "/report": "report", "/my-reports": "myreports", "/authority": "review", "/admin": "admin", "/view-incidents": "incidents" };
 
 export const canAccess = (role, area) => !!role && ACCESS[area]?.includes(role);
 export const homeFor = (role) => HOME[role] || "/login";

@@ -11,6 +11,7 @@ import {
   crimeReportUpdateController
 } from "../../controllers/crimeverify.controller.js";
 import crimeReportDeleteController from "../../controllers/admin_crimedelete.controller.js";
+import { getMyReportsController, getMyReportDetailsController } from "../../controllers/myreports.controller.js";
 
 const router = express.Router();
 
@@ -20,6 +21,20 @@ router.get("/nearby", getNearbyReportsController);
 // Any authenticated account can create a report, preserving current behavior.
 // Restrict to ["citizen"] with verifyRole if that is your desired policy.
 router.post("/", verifyJwt, crimeReportPostController);
+
+router.get(
+  "/mine",
+  verifyJwt,
+  verifyRole(["citizen"], "My Reports"),
+  getMyReportsController
+);
+
+router.get(
+  "/mine/:incident_id",
+  verifyJwt,
+  verifyRole(["citizen"], "My Report Details"),
+  getMyReportDetailsController
+);
 
 // Authority/admin: list pending reports.
 router.get(

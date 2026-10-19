@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 // Each person only sees the links their role can open. (Hiding is for tidiness; the server still enforces roles.)
 const LINKS = [
   { to: "/report", label: "Report", area: "report" },
+  { to: "/my-reports", label: "My reports", area: "myreports" },
   { to: "/view-incidents", label: "Incidents", area: "incidents" },
   { to: "/authority", label: "Review queue", area: "review" },
   { to: "/admin", label: "Admin", area: "admin" },

@@ -4,15 +4,14 @@ import { adminLogger, authorityLogger } from "../utils/logger.js";
 
 // Helper function to route logs
 const getRoleLogger = (role) => {
-    if (role === "admin" || role === "authorityTwo") return adminLogger;
+    if (role === "admin") return adminLogger;
     else return authorityLogger;
 };
 
 const DECISIONS = ["Verified", "Rejected"];
 
-// Contact details an authority needs, and nothing more. The Aadhaar value (a one-way hash) and the password are
-// never sent. We only read whether an Aadhaar is registered, so the panel can show the account as Aadhaar-backed.
-const REPORTER_FIELDS = "user_name alias_name email phone_number aadhaar_id";
+// Contact details an authority needs, and nothing more. The password is never selected or sent.
+const REPORTER_FIELDS = "user_name alias_name email phone_number";
 
 const crimeReportGetController = async (req, res) => {
     const roleLogger = getRoleLogger(req?.user?.role);
@@ -34,7 +33,7 @@ const crimeReportGetController = async (req, res) => {
     }
 }
 
-// GET /reportdetails/:incident_id -> the reporter behind a report, so an authority can contact them.
+// GET /api/incidents/:incident_id/reporter -> the reporter behind a report, so an authority can contact them.
 const crimeReportDetailsController = async (req, res) => {
     const roleLogger = getRoleLogger(req?.user?.role);
     try {
@@ -54,8 +53,7 @@ const crimeReportDetailsController = async (req, res) => {
                 alias_name: user.alias_name,
                 user_name: user.user_name,
                 email: user.email,
-                phone_number: user.phone_number,
-                aadhaar_registered: Boolean(user.aadhaar_id)
+                phone_number: user.phone_number
             } : null
         });
     } catch (error) {
@@ -64,7 +62,7 @@ const crimeReportDetailsController = async (req, res) => {
     }
 };
 
-// PATCH /updatereport/:incident_id  { decision: "Verified" | "Rejected", note? }
+// PATCH /api/incidents/:incident_id/verification  { decision: "Verified" | "Rejected", note? }
 // With no body it still verifies, so older clients keep working.
 const crimeReportUpdateController = async (req, res) => {
     const roleLogger = getRoleLogger(req?.user?.role);

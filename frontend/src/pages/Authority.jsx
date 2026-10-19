@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
-import AppHeader from "../components/AppHeader";
+import AppHeader from "../components/Appheader";
 import ReviewPanel from "../components/ReviewPanel";
 import { getPendingReports } from "../services/authority.service";
 import { getCoords, getTime, timeAgo, formatAddress } from "../utils/report";

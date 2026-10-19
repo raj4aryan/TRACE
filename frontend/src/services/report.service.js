@@ -18,3 +18,11 @@ export const fetchNearbyCrimes = async (bounds) => {
     if (!response.ok) throw new Error("Failed to fetch reports");
     return await response.json();
 };
+
+export const getMyReports = () =>
+  request("/api/incidents/mine");
+
+export const getMyReportDetails = (incidentId) =>
+  request(
+    `/api/incidents/mine/${encodeURIComponent(incidentId)}`
+  );

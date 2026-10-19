@@ -109,6 +109,8 @@ const crimeReportSchema = new Schema(
 crimeReportSchema.index({ location: "2dsphere" });
 // Speeds up the authority review queue (pending reports, newest first).
 crimeReportSchema.index({ verification_status: 1, createdAt: -1 });
+// Speeds up "My reports": one citizen's reports, newest first.
+crimeReportSchema.index({ reported_by_alias: 1, createdAt: -1 });
 
 const CrimeReportModel = mongoose.model("CrimeReport", crimeReportSchema);
 
